@@ -12,15 +12,56 @@ const getVideoComments = asyncHandler(async (req, res) => {
 })
 
 const addComment = asyncHandler(async (req, res) => {
-    // TODO: add a comment to a video
+    const {videoId} = req.params
+    const {content} = req.body
+
+    if(!content) throw new ApiError(400,"Please add some comment")
+
+    const comment = await Comment.create({
+        content,
+        video: videoId,
+        owner: req.user._id
+    })
+
+    if(!comment) throw new ApiError(400,"Could not post comment")
+
+    return res
+    .status(200)
+    .json(new ApiResponse(201,comment,"Comment added successfully"))
 })
 
 const updateComment = asyncHandler(async (req, res) => {
-    // TODO: update a comment
+    const {commentId} = req.params
+    const {content} = req.body
+    if(!content)throw new ApiError(400,"Please add some content in comment")
+    
+    const updatedComment = await Comment.findByIdAndUpdate(
+        commentId,
+        {
+            $set:{
+                content
+            }
+        },
+        {new:true}
+    )
+
+    if(!updatedComment)throw new ApiError(400,"Could not update comment")
+
+    return res
+    .status(200)
+    .json(new ApiResponse(201,updatedComment,"Comment updated successfully"))
+
 })
 
 const deleteComment = asyncHandler(async (req, res) => {
-    // TODO: delete a comment
+    const {commentId} = req.params
+
+    const comment = await Comment.findByIdAndDelete(commentId)
+    if(!comment) throw new ApiError(400,"Could not delete comment")
+
+    return res
+    .status(200)
+    .json(new ApiResponse(201,comment,"Comment deleted Successfully"))
 })
 
 export {
