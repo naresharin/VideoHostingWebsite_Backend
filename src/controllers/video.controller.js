@@ -54,8 +54,19 @@ const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     if(!videoId) throw new ApiError(400,"Video ID Required")
     
-    const video = await Video.findById(videoId)
+    const video = await Video.findByIdAndUpdate(
+        videoId,
+        {
+            $inc:{
+                views:1
+            }
+        },
+        {new:true}
+    )
     if(!video)throw new ApiError(400,"could not find video")
+
+    req.user.watchHistory.push(video)
+    await req.user.save()
 
     return res
     .status(200)
