@@ -189,7 +189,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
 
   const user = await User.findById(req.user?._id);
-  const isPasswordCorrect = await User.isPasswordCorrect(oldPassword);
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
   if (!isPasswordCorrect) throw new ApiError(400, "Invalid Old Password");
 
   user.password = newPassword;
@@ -209,7 +209,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 const updateAccountDetails = asyncHandler(async (req, res) => {
   const { email, fullName } = req.body;
 
-  if (!email || !fullName) throw new ApiError(400, "All Fields Required");
+  if (!email && !fullName) throw new ApiError(400, "All Fields Required");
 
   const user = await User.findByIdAndUpdate(
     req.user?._id,
@@ -231,7 +231,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   const avatarLocalPath = req.file?.path;
   if (!avatarLocalPath) throw new ApiError(400, "Avatar File is Missing");
 
-  const avatar = uploadOnCloudinary(avatarLocalPath);
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
   if (!avatar.url) throw new ApiError(400, "Error while uploading file");
 
   const user = await User.findByIdAndUpdate(
@@ -252,7 +252,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
   if (!coverImageLocalPath)
     throw new ApiError(400, "Cover Image File is Missing");
 
-  const coverImage = uploadOnCloudinary(coverImageLocalPath);
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
   if (!coverImage.url) throw new ApiError(400, "Error while uploading file");
 
   const user = await User.findByIdAndUpdate(
@@ -340,7 +340,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
       $match: {
-        _id: mongoose.Types.ObjectId(req.user?._id),
+        _id: new mongoose.Types.ObjectId(req.user?._id),
       },
     },
     {
