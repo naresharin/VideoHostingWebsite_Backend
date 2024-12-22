@@ -3,12 +3,45 @@ import {Comment} from "../models/comment.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
+import { Video } from "../models/video.model.js"
 
 const getVideoComments = asyncHandler(async (req, res) => {
-    //TODO: get all comments for a video
     const {videoId} = req.params
     const {page = 1, limit = 10} = req.query
 
+    const comments = await Video.aggregate([
+        {
+            $match:{
+                _id: new mongoose.Types.ObjectId(videoId)
+            }
+        },
+        {
+            $lookup: {
+                from: "comments",
+                localField: "_id",
+                foreignField: "video",
+                as: "comments",
+                pipeline: [
+                    { $sort: { createdAt: -1 } },
+                    { $skip: (page - 1) * limit },
+                    { $limit: parseInt(limit) }
+                ]
+            }
+        },
+        {
+            $project: {
+                comments:1,
+                videoFile:1,
+                views:1
+            }
+        }
+    ]);
+
+    if (!comments || comments.length === 0) throw new ApiError(400,"No comments")
+
+    return res
+    .status(200)
+    .json(new ApiResponse(201,comments,"Comments fetched successfully"))
 })
 
 const addComment = asyncHandler(async (req, res) => {
